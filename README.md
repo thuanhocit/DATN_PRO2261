@@ -1,0 +1,2 @@
+- git remote add origin https://github.com/thuanhocit/DATN_PRO2261.git
+- git push -u origin main
