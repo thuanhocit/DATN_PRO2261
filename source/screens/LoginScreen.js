@@ -1,13 +1,31 @@
-import React, { useState } from "react"
+import { useState } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image } from "react-native"
-import { useNavigation } from "@react-navigation/native"  // để điều hướng
+import { useNavigation } from "@react-navigation/native" // để điều hướng
 
 const LoginScreen = () => {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberAccount, setRememberAccount] = useState(false)
+  const [errorUsername, setErrorUsername] = useState("")
+  const [errorPassword, setErrorPassword] = useState("")
   const navigation = useNavigation()
 
   const handleLogin = async () => {
+    let valid = true
+    setErrorUsername("")
+    setErrorPassword("")
+
+    if (!username.trim()) {
+      setErrorUsername("Vui lòng nhập email hoặc số điện thoại")
+      valid = false
+    }
+    if (!password.trim()) {
+      setErrorPassword("Vui lòng nhập mật khẩu")
+      valid = false
+    }
+
+    if (!valid) return
+
     try {
       const res = await fetch("http://10.0.2.2:5000/login", {
         method: "POST",
@@ -18,21 +36,24 @@ const LoginScreen = () => {
       const data = await res.json()
       if (res.ok) {
         console.log("Login successful:", data)
-        // TODO: Lưu token vào AsyncStorage hoặc Redux ở đây
+        if (rememberAccount) {
+          console.log("Saving account info for next login")
+        }
       } else {
-        alert(data.error)
+        setErrorPassword(data.error || "Sai tài khoản hoặc mật khẩu")
       }
     } catch (err) {
       console.error(err)
+      setErrorPassword("Không thể kết nối đến server")
     }
   }
 
   const handleForgotPassword = () => {
-    navigation.navigate("ForgotPassword")   // tên screen trong App.js
+    navigation.navigate("ForgotPassword")
   }
 
   const handleCreateAccount = () => {
-    navigation.navigate("Register")         // tên screen trong App.js
+    navigation.navigate("Register")
   }
 
   return (
@@ -48,25 +69,41 @@ const LoginScreen = () => {
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Email hoặc số điện thoại</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, errorUsername ? styles.inputError : null]}
               placeholder="Email hoặc số điện thoại"
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text)
+                if (text.trim()) setErrorUsername("")
+              }}
               autoCapitalize="none"
             />
+            {errorUsername ? <Text style={styles.errorText}>{errorUsername}</Text> : null}
           </View>
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Mật khẩu</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, errorPassword ? styles.inputError : null]}
               placeholder="Mật khẩu"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text)
+                if (text.trim()) setErrorPassword("")
+              }}
               secureTextEntry
             />
+            {errorPassword ? <Text style={styles.errorText}>{errorPassword}</Text> : null}
           </View>
+
+          {/* Remember account checkbox */}
+          <TouchableOpacity style={styles.checkboxContainer} onPress={() => setRememberAccount(!rememberAccount)}>
+            <View style={[styles.checkbox, rememberAccount && styles.checkboxChecked]}>
+              {rememberAccount && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxLabel}>Nhớ tài khoản</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>ĐĂNG NHẬP</Text>
@@ -130,6 +167,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
   },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    marginTop: 5,
+    color: "red",
+    fontSize: 14,
+  },
   loginButton: {
     backgroundColor: "#C53030",
     borderRadius: 25,
@@ -181,6 +226,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: "#ddd",
+    borderRadius: 4,
+    marginRight: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  checkboxChecked: {
+    backgroundColor: "#C53030",
+    borderColor: "#C53030",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
+  },
 })
 
-export default LoginScreen;
+export default LoginScreen
